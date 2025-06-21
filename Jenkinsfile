@@ -5,7 +5,7 @@ pipeline {
         SONARQUBE_SERVER = 'SonarQube'  // Configure this in Jenkins > Manage Jenkins > Global Tool Configuration
         MAVEN_HOME = tool 'Maven 3'     // Adjust name as per your Jenkins config
         NEXUS_REPO = 'maven-releases'   // Your Nexus repository name
-        NEXUS_URL = 'http://nexus-service.nexus.svc.cluster.local:8081' // Internal K8s URL for Nexus
+        NEXUS_URL = 'https://nexus-service.nexus.svc.cluster.local:8081' // Internal K8s URL for Nexus
         NEXUS_CREDENTIALS_ID = 'nexus' // Credentials stored in Jenkins (username + password)
     }
 
