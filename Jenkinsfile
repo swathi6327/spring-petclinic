@@ -5,7 +5,7 @@ pipeline {
         SONARQUBE_SERVER = 'SonarQube'  // Configure this in Jenkins > Manage Jenkins > Global Tool Configuration
         MAVEN_HOME = tool 'Maven 3'     // Adjust name as per your Jenkins config
         NEXUS_REPO = 'maven-releases'   // Your Nexus repository name
-        NEXUS_URL = 'https://nexus-service.nexus.svc.cluster.local:8081' // Internal K8s URL for Nexus
+        NEXUS_URL = 'http://'3.110.120.48:30001 // Internal K8s URL for Nexus
         NEXUS_CREDENTIALS_ID = 'nexus' // Credentials stored in Jenkins (username + password)
     }
 
@@ -26,7 +26,7 @@ pipeline {
         stage('SonarQube Scan') {
             steps {
                 withSonarQubeEnv("${SONARQUBE_SERVER}") {
-                    sh "${MAVEN_HOME}/bin/mvn clean verify sonar:sonar"
+                    sh "${MAEN_HOME}/bin/mvn clean verify sonar:sonar"
                 }
             }
         }
@@ -47,18 +47,15 @@ pipeline {
 
         stage('Publish to Nexus') {
             steps {
-                script {
-                    def jarFile = sh(script: "ls target/*.jar | head -1", returnStdout: true).trim()
-                    withCredentials([usernamePassword(credentialsId: "${NEXUS_CREDENTIALS_ID}", usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
-                        sh """
-                        curl -v -u $NEXUS_USER:$NEXUS_PASS --upload-file ${jarFile} \
-                        ${NEXUS_URL}/repository/${NEXUS_REPO}/com/spring/petclinic/1.0.0/petclinic-1.0.0.jar
-                        """
-                    }
+                withCredentials([usernamePassword(credentialsId: 'nexus-creds', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
+                   sh '''
+                      curl -v -u $NEXUS_USER:$NEXUS_PASS \
+                      --upload-file target/spring-petclinic-3.5.0-SNAPSHOT.jar \
+                      http://<your-node-ip>:30001/repository/maven-releases/com/spring/petclinic/1.0.0/petclinic-1.0.0.jar
+                      '''
                 }
             }
         }
-    }
 
     post {
         success {
