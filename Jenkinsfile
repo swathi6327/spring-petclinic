@@ -6,7 +6,7 @@ pipeline {
         MAVEN_HOME = tool 'Maven 3'              // Jenkins Maven tool name
         NEXUS_REPO = 'maven-releases'            // Nexus repo name
         NEXUS_URL = 'http://3.110.120.48:30001'  // Nexus exposed via NodePort
-        NEXUS_CREDENTIALS_ID = 'nexus-creds'     // Jenkins credentials ID
+        NEXUS_CREDENTIALS_ID = 'nexus'     // Jenkins credentials ID
     }
 
     options {
