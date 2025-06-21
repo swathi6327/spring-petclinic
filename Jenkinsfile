@@ -6,11 +6,7 @@ pipeline {
         MAVEN_HOME = tool 'Maven 3'     // Adjust name as per your Jenkins config
         NEXUS_REPO = 'maven-releases'   // Your Nexus repository name
         NEXUS_URL = 'http://nexus-service.nexus.svc.cluster.local:8081' // Internal K8s URL for Nexus
-        NEXUS_CREDENTIALS_ID = 'nexus-creds' // Credentials stored in Jenkins (username + password)
-    }
-
-    triggers {
-        pollSCM('* * * * *')  // You can replace this with GitHub webhook trigger later
+        NEXUS_CREDENTIALS_ID = 'nexus' // Credentials stored in Jenkins (username + password)
     }
 
     options {
@@ -23,7 +19,7 @@ pipeline {
                 branch 'main'
             }
             steps {
-                git url: 'https://github.com/<your-username>/spring-petclinic.git', branch: 'main'
+                git url: 'https://github.com/yeshcrik/spring-petclinic.git', branch: 'main'
             }
         }
 
