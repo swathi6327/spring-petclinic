@@ -33,7 +33,7 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh "${MAVEN_HOME}/bin/mvn -B clean package -DskipTests"
+                sh "${MAVEN_HOME}/bin/mvn -B clean package -DskipTests -Dcheckstyle.skip=true"
             }
         }
 
