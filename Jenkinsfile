@@ -2,11 +2,11 @@ pipeline {
     agent any
 
     environment {
-        SONARQUBE_SERVER = 'SonarQube'  // Configure this in Jenkins > Manage Jenkins > Global Tool Configuration
-        MAVEN_HOME = tool 'Maven 3'     // Adjust name as per your Jenkins config
-        NEXUS_REPO = 'maven-releases'   // Your Nexus repository name
-        NEXUS_URL = 'http://3.110.120.48:30001' // Internal K8s URL for Nexus
-        NEXUS_CREDENTIALS_ID = 'nexus' // Credentials stored in Jenkins (username + password)
+        SONARQUBE_SERVER = 'SonarQube'           // Jenkins global SonarQube server name
+        MAVEN_HOME = tool 'Maven 3'              // Jenkins Maven tool name
+        NEXUS_REPO = 'maven-releases'            // Nexus repo name
+        NEXUS_URL = 'http://3.110.120.48:30001'  // Nexus exposed via NodePort
+        NEXUS_CREDENTIALS_ID = 'nexus-creds'     // Jenkins credentials ID
     }
 
     options {
@@ -26,7 +26,7 @@ pipeline {
         stage('SonarQube Scan') {
             steps {
                 withSonarQubeEnv("${SONARQUBE_SERVER}") {
-                    sh "${MAEN_HOME}/bin/mvn clean verify sonar:sonar"
+                    sh "${MAVEN_HOME}/bin/mvn clean verify sonar:sonar"
                 }
             }
         }
@@ -47,23 +47,23 @@ pipeline {
 
         stage('Publish to Nexus') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'nexus-creds', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
-                   sh '''
-                      curl -v -u $NEXUS_USER:$NEXUS_PASS \
-                      --upload-file target/spring-petclinic-3.5.0-SNAPSHOT.jar \
-                      http://<your-node-ip>:30001/repository/maven-releases/com/spring/petclinic/1.0.0/petclinic-1.0.0.jar
-                      '''
+                withCredentials([usernamePassword(credentialsId: "${NEXUS_CREDENTIALS_ID}", usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
+                    sh '''
+                        curl -v -u $NEXUS_USER:$NEXUS_PASS \
+                        --upload-file target/spring-petclinic-3.5.0-SNAPSHOT.jar \
+                        $NEXUS_URL/repository/maven-releases/com/spring/petclinic/1.0.0/petclinic-1.0.0.jar
+                    '''
                 }
             }
         }
+    }
 
     post {
         success {
-            echo "Pipeline completed successfully."
+            echo "✅ Pipeline completed successfully."
         }
         failure {
-            echo "Pipeline failed."
+            echo "❌ Pipeline failed."
         }
     }
 }
-
