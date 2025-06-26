@@ -2,13 +2,13 @@ pipeline {
     agent any
 
     environment {
-        SONARQUBE_SERVER = 'SonarQube'       
-        MAVEN_HOME = tool 'Maven 3'              
-        NEXUS_REPO = 'maven-releases'            
-        NEXUS_URL = 'http://13.201.12.77:30001'  // Maven/Nexus UI
-        NEXUS_DOCKER_REPO = 'docker-hosted'      // Docker repo name in Nexus
-        NEXUS_DOCKER_REGISTRY = '13.201.12.77:5000'  // Docker registry port
-        NEXUS_CREDENTIALS_ID = 'nexus-creds'    
+        SONARQUBE_SERVER = 'SonarQube'
+        MAVEN_HOME = tool 'Maven 3'
+        NEXUS_REPO = 'maven-releases'
+        NEXUS_URL = 'http://13.201.12.77:30001'              // Maven/Nexus UI
+        NEXUS_DOCKER_REPO = 'docker-hosted'                  // Docker repo name
+        NEXUS_DOCKER_REGISTRY = '13.201.12.77:30001'         // Updated Docker registry port
+        NEXUS_CREDENTIALS_ID = 'nexus-creds'
     }
 
     options {
@@ -75,7 +75,6 @@ pipeline {
             steps {
                 script {
                     def imageName = "petclinic"
-                    def dockerTag = "${imageName}:${BUILD_VERSION}"
 
                     // Download JAR from Nexus to build Docker image
                     withCredentials([usernamePassword(credentialsId: "${NEXUS_CREDENTIALS_ID}", usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
@@ -87,7 +86,7 @@ pipeline {
                         """
                     }
 
-                    // Build Docker image
+                    // Build Docker image using correct registry address
                     sh """
                         docker build -t ${NEXUS_DOCKER_REGISTRY}/${imageName}:${BUILD_VERSION} .
                     """
