@@ -53,7 +53,7 @@ pipeline {
 
         stage('Manual Approval') {
             steps {
-                timeout(time: 10, unit: 'MINUTES') {
+                timeout(time: 60, unit: 'MINUTES') {
                     input message: "Approve deployment to Nexus?", ok: "Deploy"
                 }
             }
