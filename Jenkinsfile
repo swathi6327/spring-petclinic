@@ -5,7 +5,9 @@ pipeline {
         SONARQUBE_SERVER = 'SonarQube'       
         MAVEN_HOME = tool 'Maven 3'              
         NEXUS_REPO = 'maven-releases'            
-        NEXUS_URL = 'http://3.110.120.48:30001' 
+        NEXUS_URL = 'http://3.110.120.48:30001'  // Maven/Nexus UI
+        NEXUS_DOCKER_REPO = 'docker-hosted'      // Docker repo name in Nexus
+        NEXUS_DOCKER_REGISTRY = '3.110.120.48:5000'  // Docker registry port
         NEXUS_CREDENTIALS_ID = 'nexus'    
     }
 
@@ -40,10 +42,8 @@ pipeline {
         stage('Version Build') {
             steps {
                 script {
-                    // You can use timestamp or git commit hash
                     def version = sh(script: "date +%Y%m%d%H%M%S", returnStdout: true).trim()
                     env.BUILD_VERSION = "1.0.0-${version}"
-                    
                     sh """
                         cp target/spring-petclinic-3.5.0-SNAPSHOT.jar target/petclinic-${BUILD_VERSION}.jar
                     """
@@ -62,11 +62,43 @@ pipeline {
         stage('Publish to Nexus') {
             steps {
                 withCredentials([usernamePassword(credentialsId: "${NEXUS_CREDENTIALS_ID}", usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
-                    sh '''
+                    sh """
                         curl -v -u $NEXUS_USER:$NEXUS_PASS \
                         --upload-file target/petclinic-${BUILD_VERSION}.jar \
-                        $NEXUS_URL/repository/maven-releases/com/spring/petclinic/1.0.0/petclinic-${BUILD_VERSION}.jar
-                    '''
+                        $NEXUS_URL/repository/$NEXUS_REPO/com/spring/petclinic/1.0.0/petclinic-${BUILD_VERSION}.jar
+                    """
+                }
+            }
+        }
+
+        stage('Build and Push Docker Image') {
+            steps {
+                script {
+                    def imageName = "petclinic"
+                    def dockerTag = "${imageName}:${BUILD_VERSION}"
+
+                    // Download JAR from Nexus to build Docker image
+                    withCredentials([usernamePassword(credentialsId: "${NEXUS_CREDENTIALS_ID}", usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
+                        sh """
+                            curl -u $NEXUS_USER:$NEXUS_PASS -O \
+                            $NEXUS_URL/repository/$NEXUS_REPO/com/spring/petclinic/1.0.0/petclinic-${BUILD_VERSION}.jar
+
+                            cp petclinic-${BUILD_VERSION}.jar petclinic.jar
+                        """
+                    }
+
+                    // Build Docker image
+                    sh """
+                        docker build -t ${NEXUS_DOCKER_REGISTRY}/${imageName}:${BUILD_VERSION} .
+                    """
+
+                    // Push Docker image to Nexus Docker registry
+                    withCredentials([usernamePassword(credentialsId: "${NEXUS_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sh """
+                            echo "$DOCKER_PASS" | docker login ${NEXUS_DOCKER_REGISTRY} -u "$DOCKER_USER" --password-stdin
+                            docker push ${NEXUS_DOCKER_REGISTRY}/${imageName}:${BUILD_VERSION}
+                        """
+                    }
                 }
             }
         }
