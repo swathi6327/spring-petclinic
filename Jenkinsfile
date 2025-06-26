@@ -7,7 +7,7 @@ pipeline {
         NEXUS_REPO = 'maven-releases'
         NEXUS_URL = 'http://13.201.12.77:30001'              // Maven/Nexus UI
         NEXUS_DOCKER_REPO = 'docker-hosted'                  // Docker repo name
-        NEXUS_DOCKER_REGISTRY = '13.201.12.77:30001'         // Updated Docker registry port
+        NEXUS_DOCKER_REGISTRY = '13.201.12.77:30002'         // Updated Docker registry port
         NEXUS_CREDENTIALS_ID = 'nexus-creds'
     }
 
