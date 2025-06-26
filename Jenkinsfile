@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+    agent { label 'jenkins-agent-01'}
 
     environment {
         SONARQUBE_SERVER = 'SonarQube'       
