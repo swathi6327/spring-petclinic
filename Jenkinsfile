@@ -1,13 +1,13 @@
 pipeline {
-    agent { label 'jenkins-agent-01'}
+    agent any
 
     environment {
         SONARQUBE_SERVER = 'SonarQube'       
-        MAVEN_HOME = tool 'Maven 3'              
+        MAVEN_HOME = tool 'Maven-3'              
         NEXUS_REPO = 'maven-releases'            
-        NEXUS_URL = 'http://65.1.131.228:30001'  // Maven/Nexus UI
+        NEXUS_URL = 'http://13.201.12.77:30001'  // Maven/Nexus UI
         NEXUS_DOCKER_REPO = 'docker-hosted'      // Docker repo name in Nexus
-        NEXUS_DOCKER_REGISTRY = '65.1.131.228:5000'  // Docker registry port
+        NEXUS_DOCKER_REGISTRY = '13.201.12.77:5000'  // Docker registry port
         NEXUS_CREDENTIALS_ID = 'nexus'    
     }
 
