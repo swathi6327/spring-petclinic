@@ -37,6 +37,20 @@ pipeline {
             }
         }
 
+        stage('Version Build') {
+            steps {
+                script {
+                    // You can use timestamp or git commit hash
+                    def version = sh(script: "date +%Y%m%d%H%M%S", returnStdout: true).trim()
+                    env.BUILD_VERSION = "1.0.0-${version}"
+                    
+                    sh """
+                        cp target/spring-petclinic-3.5.0-SNAPSHOT.jar target/petclinic-${BUILD_VERSION}.jar
+                    """
+                }
+            }
+        }
+
         stage('Manual Approval') {
             steps {
                 timeout(time: 10, unit: 'MINUTES') {
@@ -50,12 +64,11 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: "${NEXUS_CREDENTIALS_ID}", usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
                     sh '''
                         curl -v -u $NEXUS_USER:$NEXUS_PASS \
-                        --upload-file target/spring-petclinic-3.5.0-SNAPSHOT.jar \
-                        $NEXUS_URL/repository/maven-releases/com/spring/petclinic/1.0.0/petclinic-1.0.0.jar
+                        --upload-file target/petclinic-${BUILD_VERSION}.jar \
+                        $NEXUS_URL/repository/maven-releases/com/spring/petclinic/1.0.0/petclinic-${BUILD_VERSION}.jar
                     '''
                 }
             }
         }
     }
-
 }
