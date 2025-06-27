@@ -38,6 +38,7 @@ pipeline {
                 }
             }
         }
+
         stage('Trigger Sonar Report Cleanup') {
             steps {
                 script {
@@ -46,8 +47,10 @@ pipeline {
                     ], wait: true
 
                     echo "Cleanup job result: ${cleanup.result}"
-           }
+                }
+            }
         }
+
         stage('Build') {
             steps {
                 sh "mvn -B clean package -DskipTests -Dcheckstyle.skip=true"
