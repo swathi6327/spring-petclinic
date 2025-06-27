@@ -2,14 +2,15 @@ pipeline {
     agent any
 
     tools {
-        jdk 'jdk-17'             // Name must match Jenkins Global Tool Configuration
-        maven 'maven3'           // Ensure Maven 3+ is configured in Jenkins
+        jdk 'jdk-17'
+        maven 'maven3'
     }
 
     environment {
         JAVA_HOME = "${tool 'jdk-17'}"
         PATH = "${env.JAVA_HOME}/bin:${env.PATH}:${tool 'maven3'}/bin"
         SONARQUBE_SERVER = 'Sonar'
+        SONAR_PROJECT_KEY = 'Assignment1'  // Define project key explicitly
         NEXUS_REPO = 'maven-releases'
         NEXUS_URL = 'http://65.0.75.191:30801'
         NEXUS_DOCKER_REPO = 'docker-hosted'
@@ -42,11 +43,18 @@ pipeline {
         stage('Trigger Sonar Report Cleanup') {
             steps {
                 script {
-                    def cleanup = build job: 'sonarqube-cleanup', parameters: [
-                        string(name: 'PROJECT_KEY_TO_CLEAN', value: "${SONAR_PROJECT_KEY}")
-                    ], wait: true
+                    // Defensive call to cleanup job with validation
+                    try {
+                        def cleanup = build job: 'sonarqube-cleanup', parameters: [
+                            string(name: 'PROJECT_KEY_TO_CLEAN', value: "${SONAR_PROJECT_KEY}")
+                        ], wait: true
 
-                    echo "Cleanup job result: ${cleanup.result}"
+                        echo "Cleanup job result: ${cleanup.result}"
+                    } catch (Exception e) {
+                        echo "Sonar cleanup job failed: ${e.message}"
+                        currentBuild.result = 'FAILURE'
+                        error("Stopping pipeline due to cleanup failure.")
+                    }
                 }
             }
         }
@@ -73,7 +81,7 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: "${NEXUS_CREDENTIALS_ID}", usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
                     sh """
-                        curl -v -u $NEXUS_USER:$NEXUS_PASS \
+                        curl -v -u "$NEXUS_USER:$NEXUS_PASS" \
                         --upload-file target/petclinic-${BUILD_VERSION}.jar \
                         $NEXUS_URL/repository/$NEXUS_REPO/com/spring/petclinic/1.0.0/petclinic-${BUILD_VERSION}.jar
                     """
@@ -88,7 +96,7 @@ pipeline {
 
                     withCredentials([usernamePassword(credentialsId: "${NEXUS_CREDENTIALS_ID}", usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
                         sh """
-                            curl -u $NEXUS_USER:$NEXUS_PASS -O \
+                            curl -u "$NEXUS_USER:$NEXUS_PASS" -O \
                             $NEXUS_URL/repository/$NEXUS_REPO/com/spring/petclinic/1.0.0/petclinic-${BUILD_VERSION}.jar
                             mv petclinic-${BUILD_VERSION}.jar petclinic.jar
                         """
