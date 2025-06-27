@@ -42,7 +42,7 @@ pipeline {
         stage('Trigger Sonar Report Cleanup') {
             steps {
                 script {
-                    def cleanup = build job: 'sonarqube-cleanup', parameters: [
+                    def cleanup = build job: 'Assignment2', parameters: [
                         string(name: 'PROJECT_KEY_TO_CLEAN', value: "${SONAR_PROJECT_KEY}")
                     ], wait: true
 
