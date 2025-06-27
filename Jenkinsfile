@@ -1,13 +1,19 @@
 pipeline {
     agent any
 
+    tools {
+        jdk 'jdk-17'             // Name must match Jenkins Global Tool Configuration
+        maven 'maven3'           // Ensure Maven 3+ is configured in Jenkins
+    }
+
     environment {
+        JAVA_HOME = "${tool 'jdk-17'}"
+        PATH = "${env.JAVA_HOME}/bin:${env.PATH}:${tool 'maven3'}/bin"
         SONARQUBE_SERVER = 'Sonar'
-        MAVEN_HOME = tool 'maven3'
         NEXUS_REPO = 'maven-releases'
-        NEXUS_URL = 'http://65.0.75.191:30801/'              // Maven/Nexus UI
-        NEXUS_DOCKER_REPO = 'docker-hosted'                  // Docker repo name
-        NEXUS_DOCKER_REGISTRY = '65.0.75.191:30002'         // Updated Docker registry port
+        NEXUS_URL = 'http://65.0.75.191:30801'
+        NEXUS_DOCKER_REPO = 'docker-hosted'
+        NEXUS_DOCKER_REGISTRY = '65.0.75.191:30002'
         NEXUS_CREDENTIALS_ID = 'nexus-creds'
     }
 
@@ -21,21 +27,21 @@ pipeline {
                 branch 'main'
             }
             steps {
-                git url: 'https://github.com/yeshcrik/spring-petclinic.git', branch: 'main'
+                git url: 'https://github.com/swathi6327/spring-petclinic.git', branch: 'main'
             }
         }
 
         stage('SonarQube Scan') {
             steps {
                 withSonarQubeEnv("${SONARQUBE_SERVER}") {
-                    sh "${MAVEN_HOME}/bin/mvn clean verify sonar:sonar -Dcheckstyle.skip=true"
+                    sh "mvn clean verify sonar:sonar -Dcheckstyle.skip=true"
                 }
             }
         }
 
         stage('Build') {
             steps {
-                sh "${MAVEN_HOME}/bin/mvn -B clean package -DskipTests -Dcheckstyle.skip=true"
+                sh "mvn -B clean package -DskipTests -Dcheckstyle.skip=true"
             }
         }
 
@@ -45,19 +51,11 @@ pipeline {
                     def version = sh(script: "date +%Y%m%d%H%M%S", returnStdout: true).trim()
                     env.BUILD_VERSION = "1.0.0-${version}"
                     sh """
-                        cp target/spring-petclinic-3.5.0-SNAPSHOT.jar target/petclinic-${BUILD_VERSION}.jar
+                        mv target/spring-petclinic-3.5.0-SNAPSHOT.jar target/petclinic-${BUILD_VERSION}.jar
                     """
                 }
             }
         }
-
-        //stage('Manual Approval') {
-            //steps {
-                //timeout(time: 10, unit: 'MINUTES') {
-                    //input message: "Approve deployment to Nexus?", ok: "Deploy"
-                //}
-            //}
-        //}
 
         stage('Publish to Nexus') {
             steps {
@@ -76,26 +74,23 @@ pipeline {
                 script {
                     def imageName = "petclinic"
 
-                    // Download JAR from Nexus to build Docker image
                     withCredentials([usernamePassword(credentialsId: "${NEXUS_CREDENTIALS_ID}", usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
                         sh """
                             curl -u $NEXUS_USER:$NEXUS_PASS -O \
                             $NEXUS_URL/repository/$NEXUS_REPO/com/spring/petclinic/1.0.0/petclinic-${BUILD_VERSION}.jar
-
-                            cp petclinic-${BUILD_VERSION}.jar petclinic.jar
+                            mv petclinic-${BUILD_VERSION}.jar petclinic.jar
                         """
                     }
 
-                    // Build Docker image using correct registry address
                     sh """
                         docker build -t ${NEXUS_DOCKER_REGISTRY}/${imageName}:${BUILD_VERSION} .
                     """
 
-                    // Push Docker image to Nexus Docker registry
                     withCredentials([usernamePassword(credentialsId: "${NEXUS_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                         sh """
                             echo "$DOCKER_PASS" | docker login ${NEXUS_DOCKER_REGISTRY} -u "$DOCKER_USER" --password-stdin
                             docker push ${NEXUS_DOCKER_REGISTRY}/${imageName}:${BUILD_VERSION}
+                            docker logout ${NEXUS_DOCKER_REGISTRY}
                         """
                     }
                 }
