@@ -51,13 +51,13 @@ pipeline {
             }
         }
 
-        stage('Manual Approval') {
-            steps {
-                timeout(time: 10, unit: 'MINUTES') {
-                    input message: "Approve deployment to Nexus?", ok: "Deploy"
-                }
-            }
-        }
+        //stage('Manual Approval') {
+            //steps {
+                //timeout(time: 10, unit: 'MINUTES') {
+                    //input message: "Approve deployment to Nexus?", ok: "Deploy"
+                //}
+            //}
+        //}
 
         stage('Publish to Nexus') {
             steps {
