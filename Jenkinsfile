@@ -38,7 +38,16 @@ pipeline {
                 }
             }
         }
-        
+        stage('Trigger Sonar Report Cleanup') {
+            steps {
+                script {
+                    def cleanup = build job: 'sonarqube-cleanup', parameters: [
+                        string(name: 'PROJECT_KEY_TO_CLEAN', value: "${SONAR_PROJECT_KEY}")
+                    ], wait: true
+
+                    echo "Cleanup job result: ${cleanup.result}"
+                }
+            }
         stage('Build') {
             steps {
                 sh "mvn -B clean package -DskipTests -Dcheckstyle.skip=true"
