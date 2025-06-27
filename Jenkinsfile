@@ -9,7 +9,7 @@ pipeline {
     environment {
         JAVA_HOME = "${tool 'jdk-17'}"
         SONARQUBE_SERVER = 'Sonar'
-        SONAR_PROJECT_KEY = 'Assignment1'  // Define project key explicitly
+        SONAR_PROJECT_KEY = 'Assignment1'
         NEXUS_REPO = 'maven-releases'
         NEXUS_URL = 'http://65.0.75.191:30801'
         NEXUS_DOCKER_REPO = 'docker-hosted'
@@ -38,6 +38,7 @@ pipeline {
                 }
             }
         }
+
         stage('Trigger Sonar Report Cleanup') {
             steps {
                 script {
@@ -48,6 +49,8 @@ pipeline {
                     echo "Cleanup job result: ${cleanup.result}"
                 }
             }
+        }
+
         stage('Build') {
             steps {
                 sh "mvn -B clean package -DskipTests -Dcheckstyle.skip=true"
