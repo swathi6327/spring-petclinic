@@ -8,7 +8,6 @@ pipeline {
 
     environment {
         JAVA_HOME = "${tool 'jdk-17'}"
-        PATH = "${env.JAVA_HOME}/bin:${env.PATH}:${tool 'maven3'}/bin"
         SONARQUBE_SERVER = 'Sonar'
         SONAR_PROJECT_KEY = 'Assignment1'  // Define project key explicitly
         NEXUS_REPO = 'maven-releases'
@@ -39,26 +38,7 @@ pipeline {
                 }
             }
         }
-
-        stage('Trigger Sonar Report Cleanup') {
-            steps {
-                script {
-                    // Defensive call to cleanup job with validation
-                    try {
-                        def cleanup = build job: 'sonarqube-cleanup', parameters: [
-                            string(name: 'PROJECT_KEY_TO_CLEAN', value: "${SONAR_PROJECT_KEY}")
-                        ], wait: true
-
-                        echo "Cleanup job result: ${cleanup.result}"
-                    } catch (Exception e) {
-                        echo "Sonar cleanup job failed: ${e.message}"
-                        currentBuild.result = 'FAILURE'
-                        error("Stopping pipeline due to cleanup failure.")
-                    }
-                }
-            }
-        }
-
+        
         stage('Build') {
             steps {
                 sh "mvn -B clean package -DskipTests -Dcheckstyle.skip=true"
