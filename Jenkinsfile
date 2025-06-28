@@ -68,12 +68,15 @@ pipeline {
                 }
             }
         }
+
         stage('Manual Approval for Deployment') {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
-                   input message: 'Do you want to deploy the artifact to Nexus?', ok: 'Yes, deploy'
+                    input message: 'Do you want to deploy the artifact to Nexus?', ok: 'Yes, deploy'
+                }
             }
-        }      
+        }
+
         stage('Publish to Nexus') {
             steps {
                 withCredentials([usernamePassword(credentialsId: "${NEXUS_CREDENTIALS_ID}", usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASS')]) {
